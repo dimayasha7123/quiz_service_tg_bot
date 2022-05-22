@@ -41,7 +41,6 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 		if ok {
 
 			fmtText = "Welcome, %s. Again"
-			// TODO update user's username
 
 		} else {
 
@@ -74,7 +73,9 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 		text = "There should be help text, but there is no"
 
-	case command == "/getquizes" || (command == "/startquiz" && len(commandArgs) == 0):
+	case command == "/getquizes" ||
+		(command == "/startquiz" && len(commandArgs) == 0) ||
+		(command == "/gettopbyquiz" && len(commandArgs) == 0):
 
 		quizes, err := b.quizClient.GetQuizList(ctx, &emptypb.Empty{})
 		if err != nil {
@@ -83,10 +84,13 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 		text = ""
 		for _, q := range quizes.QList {
-			text += fmt.Sprintf("%s\nStart this quiz: /startquiz_%d\n\n", q.Name, q.ID)
+			text += fmt.Sprintf(
+				"%s\nStart: /startquiz_%d\nTop: /gettopbyquiz_%d\n\n",
+				q.Name,
+				q.ID,
+				q.ID,
+			)
 		}
-
-		// TODO add pagination
 
 	case command == "/startquiz":
 
@@ -133,6 +137,7 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 		user.Questions = questions
 		user.State = 1
 		user.QuizPartyID = party.QuizPartyID
+		user.CurrentQuestion = 0
 
 		text, ok = user.GetQuestion(user.CurrentQuestion)
 		if !ok {
@@ -194,7 +199,7 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 					}
 				}
 
-				sb.WriteString(fmt.Sprintf("%d. %s, with %d p.\n", r.Place, username, r.PointCount))
+				sb.WriteString(fmt.Sprintf("%d. @%s, with %d p.\n", r.Place, username, r.PointCount))
 			}
 
 			text = sb.String()
@@ -267,6 +272,61 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 	case command == "/gettopbyquiz":
 
+		if len(commandArgs) > 1 {
+			return errors.New("too much arguments")
+		}
+
+		quizID, err := strconv.ParseInt(commandArgs[0], 10, 64)
+		if err != nil {
+			return errors.New("bad arguments")
+		}
+
+		b.users.RLock()
+		user, ok := b.users.M[update.Message.From.ID]
+		b.users.RUnlock()
+		if !ok {
+			return errors.New("user not found")
+		}
+
+		sTop, err := b.quizClient.GetQuizTop(ctx, &pb.QuizUserInfo{
+			UserID: user.QSID,
+			QuizID: quizID,
+		})
+		if err != nil {
+			return err
+		}
+
+		sb := strings.Builder{}
+		if sTop.UserResults.Place == 0 && sTop.UserResults.PointCount == 0 {
+			sb.WriteString("You didn't take part\n\n")
+		} else {
+			sb.WriteString("Your results:\n")
+			sb.WriteString(fmt.Sprintf("Points: %d\n", sTop.UserResults.PointCount))
+			sb.WriteString(fmt.Sprintf("Place: %d\n", sTop.UserResults.Place))
+		}
+
+		if len(sTop.QuizTop.Results) == 0 {
+			sb.WriteString("No one has participated yet =(\nBut you can be the first!\n")
+		} else {
+			sb.WriteString("\nTop:\n")
+		}
+		for _, r := range sTop.QuizTop.Results {
+
+			username := r.Name
+
+			tgID, err := strconv.ParseInt(r.Name, 10, 64)
+			if err == nil {
+				nameFromDB, err := b.repo.FindUser(ctx, tgID)
+				if err == nil && nameFromDB != "" {
+					username = nameFromDB
+				}
+			}
+
+			sb.WriteString(fmt.Sprintf("%d. @%s, with %d p.\n", r.Place, username, r.PointCount))
+		}
+
+		text = sb.String()
+
 	default:
 
 		text = "What?"
@@ -282,7 +342,6 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 		)
 	}
 
-	// TODO может возвращать URL назад в RUN и перенести туда log MW
 	_, err := b.httpClient.Post(url, "text/plain", nil)
 	if err != nil {
 		return err

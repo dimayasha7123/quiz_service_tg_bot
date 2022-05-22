@@ -41,8 +41,7 @@ func (u *User) GetQuestion(n int) (string, bool) {
 
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("Question #%d:\n", n+1))
-	sb.WriteString(fmt.Sprintf("%s\n", u.Questions[n].Title))
-	sb.WriteString(fmt.Sprintf("\nOptions:\n"))
+	sb.WriteString(fmt.Sprintf("%s\n\n", u.Questions[n].Title))
 	for j, ansOpt := range u.Questions[n].AnswerOptions {
 		pickSign := '❌'
 		if ansOpt.Picked {
