@@ -13,9 +13,7 @@ import (
 	"strings"
 )
 
-// TODO если quizserver вернет ошибку, то тут все упадет
-
-func (b *bclient) updateHandler(ctx context.Context, update models.Update) error {
+func (b *bclient) updateHandler(ctx context.Context, update models.Update) (string, error) {
 
 	messWords := strings.Split(update.Message.Text, "_")
 	command := messWords[0]
@@ -52,13 +50,13 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 			qsID, err := b.quizClient.AddUser(ctx, &pb.User{Name: fmt.Sprintf("%d", user.TGID)})
 			if err != nil {
-				return err
+				return "", err
 			}
 			user.QSID = qsID.ID
 
 			err = b.repo.AddUser(ctx, user)
 			if err != nil {
-				return err
+				return "", err
 			}
 
 			b.users.Lock()
@@ -79,9 +77,8 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 		quizes, err := b.quizClient.GetQuizList(ctx, &emptypb.Empty{})
 		if err != nil {
-			return err
+			return "", err
 		}
-
 		text = ""
 		for _, q := range quizes.QList {
 			text += fmt.Sprintf(
@@ -95,19 +92,19 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 	case command == "/startquiz":
 
 		if len(commandArgs) > 1 {
-			return errors.New("too much arguments")
+			return "", errors.New("too much arguments")
 		}
 
 		quizID, err := strconv.ParseInt(commandArgs[0], 10, 64)
 		if err != nil {
-			return errors.New("bad arguments")
+			return "", errors.New("bad arguments")
 		}
 
 		b.users.RLock()
 		user, ok := b.users.M[update.Message.From.ID]
 		b.users.RUnlock()
 		if !ok {
-			return errors.New("user not found")
+			return "", errors.New("user not found")
 		}
 
 		party, err := b.quizClient.StartQuizParty(ctx, &pb.QuizUserInfo{
@@ -115,7 +112,7 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 			QuizID: quizID,
 		})
 		if err != nil {
-			return errors.New("quiz service error")
+			return "", errors.New("quiz service error")
 		}
 
 		questions := make([]models.Question, 0, 10)
@@ -141,7 +138,7 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 		text, ok = user.GetQuestion(user.CurrentQuestion)
 		if !ok {
-			return errors.New("quiz has no quiestions")
+			return "", errors.New("quiz has no quiestions")
 		}
 
 	case command == "/confirm":
@@ -150,11 +147,11 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 		user, ok := b.users.M[update.Message.From.ID]
 		b.users.RUnlock()
 		if !ok {
-			return errors.New("user not found")
+			return "", errors.New("user not found")
 		}
 
 		if user.State != 1 {
-			return errors.New("invalid state")
+			return "", errors.New("invalid state")
 		}
 
 		user.CurrentQuestion++
@@ -179,7 +176,7 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 			sTop, err := b.quizClient.SendAnswers(ctx, &ansPack)
 			if err != nil {
-				return errors.New("quiz service error")
+				return "", errors.New("quiz service error")
 			}
 
 			sb := strings.Builder{}
@@ -209,83 +206,83 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 
 		text, ok = user.GetQuestion(user.CurrentQuestion)
 		if !ok {
-			return errors.New("quiz has no quiestions")
+			return "", errors.New("quiz has no quiestions")
 		}
 
 	case command == "/pick":
 
 		if len(commandArgs) != 1 {
-			return errors.New("bad arguments")
+			return "", errors.New("bad arguments")
 		}
 
 		b.users.RLock()
 		user, ok := b.users.M[update.Message.From.ID]
 		b.users.RUnlock()
 		if !ok {
-			return errors.New("user not found")
+			return "", errors.New("user not found")
 		}
 
 		if user.State != 1 {
-			return errors.New("invalid state")
+			return "", errors.New("invalid state")
 		}
 
 		ansNum, err := strconv.ParseInt(commandArgs[0], 10, 64)
 		if err != nil {
-			return errors.New("bad arguments")
+			return "", errors.New("bad arguments")
 		}
 
 		user.Questions[user.CurrentQuestion].AnswerOptions[ansNum-1].Picked = true
 
 		text, ok = user.GetQuestion(user.CurrentQuestion)
 		if !ok {
-			return errors.New("quiz has no quiestions")
+			return "", errors.New("quiz has no quiestions")
 		}
 
 	case command == "/unpick":
 
 		if len(commandArgs) != 1 {
-			return errors.New("bad arguments")
+			return "", errors.New("bad arguments")
 		}
 
 		b.users.RLock()
 		user, ok := b.users.M[update.Message.From.ID]
 		b.users.RUnlock()
 		if !ok {
-			return errors.New("user not found")
+			return "", errors.New("user not found")
 		}
 
 		if user.State != 1 {
-			return errors.New("invalid state")
+			return "", errors.New("invalid state")
 		}
 
 		ansNum, err := strconv.ParseInt(commandArgs[0], 10, 64)
 		if err != nil {
-			return errors.New("bad arguments")
+			return "", errors.New("bad arguments")
 		}
 
 		user.Questions[user.CurrentQuestion].AnswerOptions[ansNum-1].Picked = false
 
 		text, ok = user.GetQuestion(user.CurrentQuestion)
 		if !ok {
-			return errors.New("quiz has no quiestions")
+			return "", errors.New("quiz has no quiestions")
 		}
 
 	case command == "/gettopbyquiz":
 
 		if len(commandArgs) > 1 {
-			return errors.New("too much arguments")
+			return "", errors.New("too much arguments")
 		}
 
 		quizID, err := strconv.ParseInt(commandArgs[0], 10, 64)
 		if err != nil {
-			return errors.New("bad arguments")
+			return "", errors.New("bad arguments")
 		}
 
 		b.users.RLock()
 		user, ok := b.users.M[update.Message.From.ID]
 		b.users.RUnlock()
 		if !ok {
-			return errors.New("user not found")
+			return "", errors.New("user not found")
 		}
 
 		sTop, err := b.quizClient.GetQuizTop(ctx, &pb.QuizUserInfo{
@@ -293,7 +290,7 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 			QuizID: quizID,
 		})
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		sb := strings.Builder{}
@@ -342,14 +339,9 @@ func (b *bclient) updateHandler(ctx context.Context, update models.Update) error
 		)
 	}
 
-	_, err := b.httpClient.Post(url, "text/plain", nil)
-	if err != nil {
-		return err
-	}
-
 	log.Printf("Get <%#v> from %d, send him <%#v>", update.Message.Text, update.Message.From.ID, text)
 
-	return nil
+	return url, nil
 }
 
 //https://api.telegram.org/bot5323294543:AAF-uuZS7_SR-j8XBuxTrYmpy_zN26u7qrA/sendPoll?chat_id=339069827&question=whatCarDoULike&options=[%22Ford%22,%20%22BMW%22,%20%22Fiat%22]&allows_multiple_answers=true

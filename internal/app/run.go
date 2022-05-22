@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hw2-tgbot/internal/models"
 	"io/ioutil"
+	url2 "net/url"
 	"time"
 )
 
@@ -52,10 +53,21 @@ func (b *bclient) Run(ctx context.Context) error {
 
 		if updates.Ok {
 			for _, update := range updates.Result {
-				err = b.updateHandler(ctx, update)
+
+				postUrl, err := b.updateHandler(ctx, update)
+				if err != nil {
+					postUrl = fmt.Sprintf(
+						"https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s",
+						b.apiKey,
+						update.Message.Chat.ID,
+						url2.PathEscape(fmt.Sprintf("Ooops, something was wrong.\nError: %v", err)),
+					)
+				}
+				_, err = b.httpClient.Post(postUrl, "text/plain", nil)
 				if err != nil {
 					return err
 				}
+
 			}
 		}
 
