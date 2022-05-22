@@ -1,8 +1,5 @@
-apiKeys:
-  telegram: "5323294543:AAF-uuZS7_SR-j8XBuxTrYmpy_zN26u7qrA"
-  quiz: "cCP7GHWCoe2d4VBysvmaAT1x1hToB54mm1rdEiYK"
-
+socket:
+  host: "localhost"
+  grpcPort: "8080"
+telegramApiKey: "5323294543:AAF-uuZS7_SR-j8XBuxTrYmpy_zN26u7qrA"
 dsn: "host=localhost port=5432 user=postgres password=postgres7123 dbname=quiz_tg_bot sslmode=disable"
-quizTags: ["JavaScript", "Linux", "Docker", "BASH", "Kubernetes", "HTML"]
-
-

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	pb "gitlab.ozon.dev/dimayasha7123/homework-2-dimayasha-7123/pkg/api"
 	"google.golang.org/grpc"
 	"hw2-tgbot/config"
@@ -39,7 +40,7 @@ func main() {
 
 	log.Println("Get db adapter")
 
-	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", cfg.Socket.Host, cfg.Socket.GrpcPort), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +48,7 @@ func main() {
 
 	log.Println("Create grpc client connection")
 
-	bclient := app.New(repository.New(adp), cfg.ApiKeys.Telegram, pb.NewQuizServiceClient(conn))
+	bclient := app.New(repository.New(adp), cfg.TelegramAPIKey, pb.NewQuizServiceClient(conn))
 
 	log.Println("Create botApiClient")
 	log.Println("Client running!")
