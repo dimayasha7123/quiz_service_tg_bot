@@ -54,7 +54,7 @@ func (b *bclient) Run(ctx context.Context) error {
 		if updates.Ok {
 			for _, update := range updates.Result {
 
-				postUrl, err := b.updateHandler(ctx, update)
+				postUrl, err := b.updateRouter(ctx, update)
 				if err != nil {
 					postUrl = fmt.Sprintf(
 						"https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s",
