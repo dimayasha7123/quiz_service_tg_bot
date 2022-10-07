@@ -3,10 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
-	"hw2-tgbot/internal/models"
 	"log"
 	url2 "net/url"
 	"strings"
+
+	"github.com/dimayasha7123/quiz_service_tg_bot/internal/models"
 )
 
 func (b *bclient) updateRouter(ctx context.Context, update models.Update) (string, error) {

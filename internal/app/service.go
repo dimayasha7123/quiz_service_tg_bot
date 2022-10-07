@@ -1,9 +1,10 @@
 package app
 
 import (
-	pb "gitlab.ozon.dev/dimayasha7123/homework-2-dimayasha-7123/pkg/api"
-	"hw2-tgbot/internal/models"
 	"net/http"
+
+	pb "github.com/dimayasha7123/quiz_service/pkg/api"
+	"github.com/dimayasha7123/quiz_service_tg_bot/internal/models"
 )
 
 type bclient struct {

@@ -2,7 +2,8 @@ package repository
 
 import (
 	"context"
-	"hw2-tgbot/internal/models"
+
+	"github.com/dimayasha7123/quiz_service_tg_bot/internal/models"
 )
 
 func (r repository) AddUser(ctx context.Context, user *models.User) error {

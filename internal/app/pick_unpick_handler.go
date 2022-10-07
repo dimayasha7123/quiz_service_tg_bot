@@ -3,8 +3,9 @@ package app
 import (
 	"context"
 	"errors"
-	"hw2-tgbot/internal/models"
 	"strconv"
+
+	"github.com/dimayasha7123/quiz_service_tg_bot/internal/models"
 )
 
 func (b *bclient) pickUnpickHandler(ctx context.Context, update models.Update, commandArgs []string, value bool) (string, error) {

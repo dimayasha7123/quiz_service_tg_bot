@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hw2-tgbot/internal/models"
 	"io/ioutil"
 	url2 "net/url"
 	"time"
+
+	"github.com/dimayasha7123/quiz_service_tg_bot/internal/models"
 )
 
 func (b *bclient) Run(ctx context.Context) error {
