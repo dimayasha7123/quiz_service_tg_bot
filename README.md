@@ -1,4 +1,4 @@
-## TG_QUIZ_BOT (homework-2)
+## quiz_service_tg_bot
 
 Telegram-bot, являющийся интерфейсом для [QUIZ_BOT_SERVICE](https://github.com/dimayasha7123/quiz_service)
 
